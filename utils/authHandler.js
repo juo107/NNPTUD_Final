@@ -30,5 +30,15 @@ module.exports = {
             res.status(403).send({ message: "ban chua dang nhap" })
         }
 
+    },
+    checkRole: function (...requiredRoles) {
+        return function (req, res, next) {
+            let roleOfUser = req.user.role.name;
+            if (requiredRoles.includes(roleOfUser)) {
+                next();
+            } else {
+                res.status(403).send("ban khong co quyen")
+            }
+        }
     }
 }

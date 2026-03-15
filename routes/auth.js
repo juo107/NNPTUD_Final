@@ -3,6 +3,8 @@ var router = express.Router();
 let userController = require('../controllers/users')
 let { RegisterValidator, validatedResult, ChangePasswordValidator } = require('../utils/validator')
 let { CheckLogin } = require('../utils/authHandler')
+let crypto = require('crypto')
+let { sendMail } = require('../utils/sendMail')
 //login
 router.post('/login', async function (req, res, next) {
     let { username, password } = req.body;
@@ -39,18 +41,35 @@ router.post('/changepassword', CheckLogin, ChangePasswordValidator, validatedRes
     }
 
 })
-router.post('/logout',CheckLogin, async function (req, res, next){
-    res.cookie("TOKEN_NNPTUD_C3",null,{
-        maxAge:0
+router.post('/logout', CheckLogin, async function (req, res, next) {
+    res.cookie("TOKEN_NNPTUD_C3", null, {
+        maxAge: 0
     })
     res.send("logout")
 })
-
-
-//changepassword
-
-
-
+router.post("/forgotpassword", async function (req, res, next) {
+    let { email } = req.body;
+    let user = await userController.GetUserByEmail(email);
+    if (user) {
+        user.forgotPasswordToken = crypto.randomBytes(32).toString('hex');
+        user.forgotPasswordTokenExp = Date.now() + 1000 * 60 * 10;
+        await user.save();
+        let url = "http://localhost:3000/api/v1//auth/resetpassword/" + user.forgotPasswordToken;
+        await sendMail(user.email, url);
+    }
+    res.send("kiem tra mail")
+})
+router.post('/resetpassword/:token', async function (req, res, next) {
+    let { password } = req.body;
+    let user = await userController.GetUserByToken(req.params.token);
+    if (user) {
+        user.password = password;
+        user.forgotPasswordToken = null;
+        user.forgotPasswordTokenExp = null;
+        await user.save()
+    }
+    res.send("thanh cong")
+})
 
 //forgotpassword
 //permission

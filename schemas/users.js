@@ -50,7 +50,9 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: false
     },
-    lockTime: Date
+    lockTime: Date,
+    forgotPasswordToken: String,
+    forgotPasswordTokenExp: Date
   },
   {
     timestamps: true

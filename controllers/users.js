@@ -25,10 +25,36 @@ module.exports = {
     GetUserById: async function (id) {
         try {
             return await userModel
-                .find({
+                .findOne({
                     isDeleted: false,
                     _id: id
+                }).populate('role')
+        } catch (error) {
+            return false;
+        }
+    },
+    GetUserByEmail: async function (email) {
+        try {
+            return await userModel
+                .findOne({
+                    isDeleted: false,
+                    email: email
                 })
+        } catch (error) {
+            return false;
+        }
+    },
+    GetUserByToken: async function (token) {
+        try {
+            let user = await userModel
+                .findOne({
+                    isDeleted: false,
+                    forgotPasswordToken: token
+                })
+            if (user.forgotPasswordTokenExp > Date.now()) {
+                return user;
+            }
+            return false;
         } catch (error) {
             return false;
         }
@@ -47,7 +73,7 @@ module.exports = {
             } else {
                 if (bcrypt.compareSync(password, user.password)) {
                     user.loginCount = 0;
-                    await user.save();    
+                    await user.save();
                     let token = jwt.sign({
                         id: user.id
                     }, 'secret', {
