@@ -63,6 +63,17 @@
 </head>
 
 <body>
+    <div>
+        <input type="text" id="jwt_txt"
+            value="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY5Y2I4MDM0ZWVhZDlmNmZkMTJkNDE4MSIsImlhdCI6MTc3NDk0NjM5NywiZXhwIjoxNzc1MDMyNzk3fQ._6vvTHhCm388wCAwPZIj2zdKLgY8_kZ5YbuE70u5oSY">
+        <input type="button" value="getUser" onclick="getUser()">
+        <p id="user"></p>
+    </div>
+    <div>
+        <input type="text" id="userid_txt" value="69cb7ffaeead9f6fd12d4174">
+        <input type="button" value="getMessage" onclick="getMessage()">
+        <p id="user"></p>
+    </div>
     <ul id="messages"></ul>
     <form id="form" action="">
         <input id="input" autocomplete="off" /><button>Send</button>
@@ -70,6 +81,63 @@
 </body>
 <script src="/socket.io/socket.io.js"></script>
 <script>
-    const socket = io();
+    var socket;
+    function getUser() {
+        let jwt = document.getElementById('jwt_txt').value;
+        socket = io({
+            auth: {
+                token: jwt
+            }
+        });
+        socket.on('welcome', msg => {
+            document.getElementById('user').innerHTML = msg
+        })
+        socket.on('newMessage', msg => {
+            getMessage();
+        })
+    }
+    async function getMessage() {
+        let jwt = document.getElementById('jwt_txt').value;
+        let user02 = document.getElementById('userid_txt').value;
+        socket.emit('joinUser', user02);
+        let res = await fetch('http://localhost:3000/api/v1/messages/' + user02, {
+            headers: {
+                "authorization": "Bearer " + jwt
+            }
+        })
+        let messages = await res.json()
+        document.getElementById('messages').innerHTML = '';
+        for (const message of messages) {
+            document.getElementById('messages').innerHTML +=
+                `<li>${message.from.username}: ${message.messageContent.text}</li>`
+        }
+        return false;
+    }
+    document.getElementById('form').addEventListener('submit', async e => {
+        e.preventDefault()
+        let jwt = document.getElementById('jwt_txt').value;
+        let user02 = document.getElementById('userid_txt').value;
+        let text = document.getElementById('input').value;
+        let newMessage = {
+            to: user02,
+            text: text
+        }
+        let res = await fetch('http://localhost:3000/api/v1/messages', {
+            method: 'POST',
+            headers: {
+                "authorization": "Bearer " + jwt,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify(newMessage)
+        })
+        if (res.ok) {
+            let data = await res.json();
+            await getMessage()
+            document.getElementById('input').value = "";
+            socket.emit('newMessage', data);
+        }
+        
+    })
 </script>
+
 </html>
