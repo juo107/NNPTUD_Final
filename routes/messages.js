@@ -49,7 +49,7 @@ router.get('/:userID', CheckLogin, async function (req, res, next) {
         }]
     }).sort({
         createdAt: -1
-    })
+    }).populate('from to')
     res.send(messages)
 })
 
